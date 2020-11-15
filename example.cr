@@ -10,6 +10,8 @@ lib LibIPFS
 	fun ipfs_Loader_PluginLoader_Create( path : UInt8* ) : Int64
 	fun ipfs_Loader_PluginLoader_Initialize( handle : Int64 ) : Int64
 	fun ipfs_Loader_PluginLoader_Inject( handle : Int64 ) : Int64
+
+	fun ipfs_Config_Init( io : Int64, size : Int32 ) : Int64
 end
 
 module IPFS
@@ -18,18 +20,36 @@ module IPFS
 		LibIPFS.ipfs_Cleanup()
 	}
 
+	def self.raise_ipfs_error()
+		raise String.new( LibIPFS.ipfs_LastError() )
+	end
+
 	class PluginLoader
 		@handle : Int64
 
 		def initialize( path : String )
 			@handle = LibIPFS.ipfs_Loader_PluginLoader_Create( path )
-			puts "@handle=#{@handle}"
+			IPFS.raise_ipfs_error if @handle <= 0
 		end
 		def initialize_plugins()
-			err = LibIPFS.ipfs_Loader_PluginLoader_Initialize( @handle )
+			error = LibIPFS.ipfs_Loader_PluginLoader_Initialize( @handle )
+			IPFS.raise_ipfs_error if error == 0
 		end
 		def inject()
-			err = LibIPFS.ipfs_Loader_PluginLoader_Inject( @handle )
+			error = LibIPFS.ipfs_Loader_PluginLoader_Inject( @handle )
+			IPFS.raise_ipfs_error if error == 0
+		end
+	end
+
+	class Config
+		def initialize( keysize : Int )
+			@handle = LibIPFS.ipfs_Config_Init( 0, keysize )
+			IPFS.raise_ipfs_error if @handle <= 0
+		end
+	end
+
+	class FSRepo
+		def initialize( path : String, cfg : Config )
 		end
 	end
 end
@@ -42,7 +62,9 @@ def setupPlugins( plugin_path )
 	loader.inject()
 end
 def createTempRepo()
+	repoPath = File.tempname("ipfs-shell")
 
+	cfg = IPFS::Config.new( keysize: 2048 )
 end
 def createNode( repoPath )
 

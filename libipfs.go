@@ -5,14 +5,16 @@ import "C"
 import (
 	"context"
 	"fmt"
-//	"io/ioutil"
+	"errors"
+	"io"
+	"io/ioutil"
 //	"log"
 //	"os"
 //	"path/filepath"
 //	"strings"
 //	"sync"
 
-//	config "github.com/ipfs/go-ipfs-config"
+	config "github.com/ipfs/go-ipfs-config"
 //	files "github.com/ipfs/go-ipfs-files"
 //	libp2p "github.com/ipfs/go-ipfs/core/node/libp2p"
 //	icore "github.com/ipfs/interface-go-ipfs-core"
@@ -37,6 +39,7 @@ type ipfs_api_context struct {
 
 	// Handle types
 	plugin_loaders		[]*loader.PluginLoader
+	configs			[]*config.Config
 }
 var api_context ipfs_api_context
 
@@ -61,6 +64,10 @@ func ipfs_LastError() *C.char {
 	return C.CString( api_context.last_error.Error() )
 }
 
+
+
+
+
 //export ipfs_Loader_PluginLoader_Create
 func ipfs_Loader_PluginLoader_Create( plugin_path *C.char ) int64 {
 	loader,err := loader.NewPluginLoader( C.GoString( plugin_path ) )
@@ -79,14 +86,65 @@ func ipfs_Loader_PluginLoader_Create( plugin_path *C.char ) int64 {
 
 //export ipfs_Loader_PluginLoader_Initialize
 func ipfs_Loader_PluginLoader_Initialize( handle int64 ) int64 {
-	fmt.Println( "ipfs_Loader_PluginLoader_Initialize not yet implemented" )
-	return 0
+	// Get the PluginLoader Object
+	if handle < 1 || int(handle) > len( api_context.plugin_loaders ) {
+		api_context.last_error = errors.New( fmt.Sprintf( "Invalid handle %d", handle ) )
+		return 0
+	}
+	loader := api_context.plugin_loaders[handle-1]
+
+	// Load preload and external plugins
+	if err := loader.Initialize(); err != nil {
+		api_context.last_error = err;
+		return 0
+	}
+
+	return 1
 }
 
 //export ipfs_Loader_PluginLoader_Inject
 func ipfs_Loader_PluginLoader_Inject( handle int64 ) int64 {
-	fmt.Println( "ipfs_Loader_PluginLoader_Inject not yet implemented" )
-	return 0
+	// Get the PluginLoader Object
+	if handle < 1 || int(handle) > len( api_context.plugin_loaders ) {
+		api_context.last_error = errors.New( fmt.Sprintf( "Invalid handle %d", handle ) )
+		return 0
+	}
+	loader := api_context.plugin_loaders[handle-1]
+
+	// Load preload and external plugins
+	if err := loader.Inject(); err != nil {
+		api_context.last_error = err;
+		return 0
+	}
+
+	return 1
+}
+
+
+
+
+//export ipfs_Config_Init
+func ipfs_Config_Init( io_handle int64, size int32 ) int64 {
+	var out io.Writer
+	if io_handle == 0 {
+		out = ioutil.Discard
+	} else {
+		api_context.last_error = errors.New( "Invalid IO handle. IO objects not (yet) implemented" )
+		return 0
+	}
+
+	// Create a config with default options and the specified keysize
+	cfg, err := config.Init( out, int(size) )
+	if err != nil {
+		api_context.last_error = err
+		return 0
+	}
+
+	// Add the config to the object array
+	api_context.configs = append( api_context.configs, cfg )
+
+	// Return the handle
+	return int64( len( api_context.configs ) )
 }
 
 func main() {}
