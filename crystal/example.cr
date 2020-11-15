@@ -2,37 +2,29 @@ require "./libipfs"
 require "./libp2p"
 require "./ipfs"
 
-# Below is a port of the ipfs-as-a-library example program in crystal
+# Below is a partial port of the ipfs-as-a-library example program in crystal
 
-def setupPlugins( plugin_path )
-	loader = IPFS::PluginLoader.new( File.join( plugin_path, "plugins" ) )
-	loader.initialize_plugins()
-	loader.inject()
-end
-def createTempRepo()
-	repoPath = File.tempname("ipfs-shell")
-	puts "repo at #{repoPath}"
-	cfg = IPFS::Config.new( keysize: 2048 )
-	IPFS::FSRepo.init( repoPath, cfg )
+## Spawn Ephemeral node
+# setupPlugins
+loader = IPFS::PluginLoader.new( File.join( "", "plugins" ) )
+loader.initialize_plugins()
+loader.inject()
 
-	return repoPath
-end
-def createNode( repoPath )
-	repo = IPFS::FSRepo.new( repoPath )
+# Create temporary repo
+repoPath = File.tempname("ipfs-shell")
+puts "repo at #{repoPath}"
 
-	nodeOptions = IPFS::BuildCfg.new(
-		online: true,
-		routing: LibP2P::DHTOption,
-		repo: repo
-	)
-end
+cfg = IPFS::Config.new( keysize: 2048 )
+IPFS::FSRepo.init( repoPath, cfg )
 
-def spawnEphemeral()
-	setupPlugins("")
+# Create Node
+repo = IPFS::FSRepo.new( repoPath )
 
-	repoPath = createTempRepo()
+nodeOptions = IPFS::BuildCfg.new(
+	online: true,
+	routing: LibP2P::DHTOption,
+	repo: repo
+)
 
-	return createNode(repoPath)
-end
+node = IPFS::CoreAPI.new( nodeOptions )
 
-spawnEphemeral()

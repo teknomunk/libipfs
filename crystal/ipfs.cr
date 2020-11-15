@@ -3,20 +3,25 @@ module IPFS
 	at_exit {
 		LibIPFS.ipfs_Cleanup()
 	}
+	spawn {
+		LibIPFS.ipfs_RunGoroutines()
+	}
 
 	def self.check_error( e )
-		raise_error if e <= 0
+		raise_error(e) if e <= 0
 	end
 	def self.check_error( e : LibIPFS::ErrorCode )
 		case e
 		when LibIPFS::ErrorCode::NoError
 			return
 		else
-			raise_error
+			raise_error(e.to_i64)
 		end
 	end
-	def self.raise_error()
-		raise String.new( LibIPFS.ipfs_LastError() )
+	def self.raise_error( error_code )
+		str = String.new( LibIPFS.ipfs_GetError( error_code ) )
+		LibIPFS.ipfs_ReleaseError( error_code )
+		raise str
 	end
 
 	class PluginLoader
@@ -62,5 +67,35 @@ module IPFS
 		def finalize()
 			IPFS.check_error LibIPFS.ipfs_BuildCfg_Release(@handle)
 		end
+	end
+
+	class CoreAPI
+		getter handle
+		def initialize( cfg : BuildCfg )
+			IPFS.check_error( @handle = LibIPFS.ipfs_CoreAPI_Create( cfg.handle ) )
+		end
+
+		struct Swarm
+			def initialize( @api : CoreAPI ); end
+
+			def connect( peerAddr )
+				completion : Int32 = 0
+				ptr = pointerof(completion)
+				LibIPFS.ipfs_CoreAPI_Swarm_Connect_async( @api.handle, peerAddr, ptr )
+				while ptr[0] == 0
+					Fiber.yield()
+					LibIPFS.ipfs_RunGoroutines()
+				end
+				if ptr[0] < 0
+					raise LibIPFS.ipfs_AsyncError( ptr[0] )
+				end
+			end
+		end
+		def swarm(); Swarm.new(self); end
+
+		struct UnixFS
+			def initialize( @api : CoreAPI ); end
+		end
+		def unixfs(); UnixFS.new(self); end
 	end
 end

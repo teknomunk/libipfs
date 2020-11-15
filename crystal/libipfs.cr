@@ -9,7 +9,9 @@ lib LibIPFS
 
 	fun ipfs_Init() : Void
 	fun ipfs_Cleanup() : Void
-	fun ipfs_LastError() : CString
+
+	fun ipfs_GetError( handle : Int64 ) : CString
+	fun ipfs_ReleaseError( handle : Int64 ) : Void
 
 	type PluginLoaderHandle = Int64
 	fun ipfs_Loader_PluginLoader_Create( path : CString ) : PluginLoaderHandle
@@ -30,5 +32,11 @@ lib LibIPFS
 	fun ipfs_BuildCfg_SetRouting( handle : BuildCfgHandle, option : Int32 ) : ErrorCode
 	fun ipfs_BuildCfg_SetRepo( handle : BuildCfgHandle, repo : RepoHandle ) : ErrorCode
 	fun ipfs_BuildCfg_Release( handle : BuildCfgHandle ) : ErrorCode
+
+	type CoreAPIHandle = Int64
+	fun ipfs_CoreAPI_Create( cfg : BuildCfgHandle ) : CoreAPIHandle
+	fun ipfs_CoreAPI_Swarm_Connect_async( api : CoreAPIHandle, peerAddr : CString, complete : Pointer(Int64) ) : ErrorCode
+
+	fun ipfs_RunGoroutines() : ErrorCode
 end
 
