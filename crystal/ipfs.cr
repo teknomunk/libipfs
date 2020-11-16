@@ -79,23 +79,51 @@ module IPFS
 			def initialize( @api : CoreAPI ); end
 
 			def connect( peerAddr )
-				completion : Int32 = 0
+				completion : Int64 = 0
 				ptr = pointerof(completion)
 				LibIPFS.ipfs_CoreAPI_Swarm_Connect_async( @api.handle, peerAddr, ptr )
 				while ptr[0] == 0
 					Fiber.yield()
 					LibIPFS.ipfs_RunGoroutines()
 				end
-				if ptr[0] < 0
-					raise LibIPFS.ipfs_AsyncError( ptr[0] )
-				end
+				IPFS.check_error( ptr[0] )
+				puts "connected to #{peerAddr}"
 			end
 		end
 		def swarm(); Swarm.new(self); end
 
+		class Node < IO
+			getter handle : LibIPFS::NodeHandle
+			@offset : Int64 = 0
+			def initialize( @handle : LibIPFS::NodeHandle ); end
+
+			def read( slice : Bytes )
+				res = LibIPFS.ipfs_Node_Read( @handle, slice, slice.size, @offset )
+				IPFS.check_error( res )
+				@offset += ( res - 1 )
+				return res - 1
+			end
+			def write( slice : Bytes ) : Nil
+				raise "IPFS::Node is read only"
+			end
+
+			def to_s( io )
+				io << "[Node handle=#{ handle.to_i64 }]"
+			end
+			def inspect( io )
+				io << "[Node handle=#{ handle.to_i64 }]"
+			end
+		end
+
 		struct UnixFS
 			def initialize( @api : CoreAPI ); end
+
+			def get( cid : String )
+				IPFS.check_error( handle = LibIPFS.ipfs_CoreAPI_Unixfs_Get( @api.handle, cid ) )
+				return Node.new(handle)
+			end
 		end
 		def unixfs(); UnixFS.new(self); end
 	end
 end
+

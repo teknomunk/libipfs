@@ -34,8 +34,14 @@ lib LibIPFS
 	fun ipfs_BuildCfg_Release( handle : BuildCfgHandle ) : ErrorCode
 
 	type CoreAPIHandle = Int64
+	type NodeHandle = Int64
 	fun ipfs_CoreAPI_Create( cfg : BuildCfgHandle ) : CoreAPIHandle
-	fun ipfs_CoreAPI_Swarm_Connect_async( api : CoreAPIHandle, peerAddr : CString, complete : Pointer(Int64) ) : ErrorCode
+	fun ipfs_CoreAPI_Swarm_Connect_async( api : CoreAPIHandle, peerAddr : CString, complete : Int64* ) : ErrorCode
+	fun ipfs_CoreAPI_Unixfs_Get( api : CoreAPIHandle, cid : CString ) : NodeHandle
+
+	fun ipfs_Node_GetType( node : NodeHandle ) : Int64
+	fun ipfs_Node_Read( node : NodeHandle, unsafe_bytes : UInt8*, limit : Int32, offset : Int64 ) : Int64
+	#fun ipfs_Node_Read_async( node : NodeHandle, unsafe_bytes : UInt8*, limit : Int32, offset : Int64, complete : Int64*) ) : Int64
 
 	fun ipfs_RunGoroutines() : ErrorCode
 end

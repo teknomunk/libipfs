@@ -14,12 +14,13 @@ import (
 //	"strings"
 //	"sync"
 	"runtime"
+	"unsafe"
 
 	config "github.com/ipfs/go-ipfs-config"
-//	files "github.com/ipfs/go-ipfs-files"
+	files "github.com/ipfs/go-ipfs-files"
 	libp2p "github.com/ipfs/go-ipfs/core/node/libp2p"
 	icore "github.com/ipfs/interface-go-ipfs-core"
-//	icorepath "github.com/ipfs/interface-go-ipfs-core/path"
+	icorepath "github.com/ipfs/interface-go-ipfs-core/path"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 
@@ -48,6 +49,7 @@ type ipfs_api_context struct {
 	repos			[]repo.Repo
 	build_cfgs		[]*core.BuildCfg
 	core_apis			[]icore.CoreAPI
+	nodes			[]files.Node
 }
 var api_context ipfs_api_context
 
@@ -59,6 +61,8 @@ func ipfs_Init() {
 	api_context.ctx = ctx
 	api_context.ctx_cancel = cancel
 	api_context.next_error = -1
+
+	api_context.errors = make(map[int64]error)
 }
 
 //export ipfs_Cleanup
@@ -363,6 +367,92 @@ func ipfs_CoreAPI_Swarm_Connect_async( api_handle int64, addr *C.char, result *i
 
 	go perform_swarm_connect( api, C.GoString( addr ), result )
 	return 1
+}
+
+//export ipfs_CoreAPI_Unixfs_Get
+func ipfs_CoreAPI_Unixfs_Get( api_handle int64, cid_str *C.char ) int64 {
+	api, ec := coreAPI_from_handle( api_handle )
+	if ec <= 0 {
+		return ec
+	}
+
+	cid := icorepath.New( C.GoString( cid_str ) )
+
+	node, err := api.Unixfs().Get( api_context.ctx, cid )
+	if err != nil {
+		return ipfs_SubmitError( err )
+	}
+
+	api_context.nodes = append( api_context.nodes, node )
+	return int64( len( api_context.nodes ) )
+}
+
+
+func node_from_handle( handle int64 ) (files.Node, int64) {
+	// Get the PluginLoader Object
+	if handle < 1 || int(handle) > len( api_context.nodes ) {
+		return nil,ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid Node handle: %d", handle ) ) )
+	}
+	return api_context.nodes[handle-1], 1
+}
+
+func ipfs_Node_GetType( handle int64 ) int64 {
+	node, ec := node_from_handle( handle )
+	if ec <= 0 {
+		return ec
+	}
+
+	switch node.(type) {
+		case files.File:
+			return 1
+		case files.Directory:
+			return 2
+		default:
+			return ipfs_SubmitError( errors.New( "Unknown Node type" ) )
+	}
+}
+//export ipfs_Node_Read
+func ipfs_Node_Read( handle int64, unsafe_bytes unsafe.Pointer, bytes_limit int32, offset int64 ) int64 {
+	node, ec := node_from_handle( handle )
+	if ec <= 0 {
+		return ec
+	}
+
+	var file files.File
+	switch f := node.(type) {
+		case files.File:
+			file = f
+		case files.Directory:
+			return 2
+			return ipfs_SubmitError( errors.New( "Directory does not support file read" ) )
+		default:
+			return ipfs_SubmitError( errors.New( "Unknown Node type" ) )
+	}
+
+	bytes := make( []byte, bytes_limit )
+
+	_, err := file.Seek( offset, io.SeekStart )
+	if err != nil {
+		return ipfs_SubmitError( err )
+	}
+	offset = 0
+
+	read_count, err := file.Read( bytes )
+	if err != nil && err != io.EOF {
+		return ipfs_SubmitError( err )
+	}
+
+	// Copy the data read from the node to the source buffer
+	// I couldn't get this to work any other way than the
+	// pointer arithmetic below.
+	uint_dst := uintptr(unsafe_bytes)
+	for i := 0; i < read_count; i++ {
+		dst := (*byte)( unsafe.Pointer(uint_dst) )
+		*dst = bytes[i]
+		uint_dst += 1
+	}
+
+	return int64( read_count + 1 )
 }
 
 
