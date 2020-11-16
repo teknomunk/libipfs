@@ -44,10 +44,15 @@ There is an example program written in crystal included to show that the
 API works.  The code is based off the ipfs-as-a-library example in go-ipfs.
 To build and run the example code, you will need the crystal compiler.
 
-# Run build.sh to compile libipfs.so
-# Copy to /usr/local/lib/
-# ldconfig - /usr/local/lib/libipfs.so
-# export LD\_LIBRARY\_PATH=/usr/local/lib/
-# crystal build crystal/example.cr
-# ./example
+1. Run build.sh to compile libipfs.so
+2. Copy to /usr/local/lib/
+3. ldconfig - /usr/local/lib/libipfs.so
+4. export LD\_LIBRARY\_PATH=/usr/local/lib/
+5. crystal build crystal/example.cr
+6. ./example
+
+# Documentation
+
+There is almost no comments and no documentation. Hopefully this changes
+in the future.
 
