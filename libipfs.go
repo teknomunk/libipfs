@@ -58,6 +58,10 @@ type ipfs_api_context struct {
 var api_context ipfs_api_context
 
 
+/*
+	Initialize the IPFS library. This must be called before calling any other
+	ipfs_* functions.
+*/
 //export ipfs_Init
 func ipfs_Init() {
 	// Setup basic enviroment to allow the API to function
@@ -71,6 +75,10 @@ func ipfs_Init() {
 	api_context.strings = make(map[int64]string)
 	api_context.next_string = 1
 }
+/*
+	Cleanup/teardown the IPFS library. Calling any ipfs_* functions after
+	calling this function is undefined.
+*/
 //export ipfs_Cleanup
 func ipfs_Cleanup() {
 	// Tear down everything
@@ -79,6 +87,12 @@ func ipfs_Cleanup() {
 	fmt.Println("ipfs closed")
 }
 
+/*
+	Get a string representation for an error code. This library treats any
+	negative return code as an error condition. The code returned is specific
+	to the function call producing it. Pass the error code to this function
+	to get a string representation of the error.
+*/
 //export ipfs_GetError
 func ipfs_GetError( handle int64 ) *C.char {
 	err, ok := api_context.errors[handle]
@@ -88,6 +102,11 @@ func ipfs_GetError( handle int64 ) *C.char {
 		return C.CString( "Invalid error handle" )
 	}
 }
+
+/*
+	Release the error code. This must be called for every error code received
+	or a memory leak will result.
+*/
 //export ipfs_ReleaseError
 func ipfs_ReleaseError( handle int64 ) int64 {
 	_, ok := api_context.errors[handle]
@@ -98,6 +117,11 @@ func ipfs_ReleaseError( handle int64 ) int64 {
 	delete( api_context.errors, handle )
 	return 1
 }
+
+/*
+	Internal helper function to take a Go error and turn it into an error
+	code for returning thru the API.
+*/
 func ipfs_SubmitError( err error ) int64 {
 	handle := api_context.next_error
 
@@ -107,7 +131,12 @@ func ipfs_SubmitError( err error ) int64 {
 	return handle
 }
 
-
+/*
+	Internal helper function to take a string and turn it into a return code.
+	Because C can only return a single return value, this is used to turn a
+	string into an integer handle that can be returned by a function with a int64_t
+	return type or thru a inter64_t* parameter return buffer.
+*/
 func ipfs_SubmitString( str string ) int64 {
 	handle := api_context.next_string
 
@@ -116,6 +145,10 @@ func ipfs_SubmitString( str string ) int64 {
 
 	return handle
 }
+
+/*
+	Get a C-string for a given string handle.
+*/
 //export ipfs_GetString
 func ipfs_GetString( handle int64 ) *C.char {
 	str, ok := api_context.strings[handle]
@@ -125,6 +158,11 @@ func ipfs_GetString( handle int64 ) *C.char {
 		return nil
 	}
 }
+
+/*
+	Release a string handle. Failing to release a string returned from an API
+	call will result in a memory leak.
+*/
 //export ipfs_ReleaseString
 func ipfs_ReleaseString( handle int64 ) int64 {
 	_, ok := api_context.strings[handle]
@@ -136,7 +174,16 @@ func ipfs_ReleaseString( handle int64 ) int64 {
 	return 1
 }
 
-
+/*
+	Internal helper function to convert a *loader.Plugin into a handle
+*/
+func handle_from_pluginLoader( loader *loader.PluginLoader ) ( int64 ) {
+	api_context.plugin_loaders = append( api_context.plugin_loaders, loader )
+	return int64( len( api_context.plugin_loaders ) )
+}
+/*
+	Internal helper function to convert a handle to a *loader.PluginLoader
+*/
 func pluginLoader_from_handle( handle int64 ) (*loader.PluginLoader, int64) {
 	// Get the PluginLoader Object
 	if handle < 1 || int(handle) > len( api_context.plugin_loaders ) {
@@ -145,6 +192,19 @@ func pluginLoader_from_handle( handle int64 ) (*loader.PluginLoader, int64) {
 	return api_context.plugin_loaders[handle-1], 1
 }
 
+/*
+	Create a new *loader.PluginLoader.
+
+	Parameters:
+		plugin_path
+			Path to plugin path.  May be "".
+
+	Return:
+		On success:
+			A handle to the plugin loader.  num > 0
+		Otherwise:
+			Error code. See ipfs_GetError and ipfs_ReleaseError for details
+*/
 //export ipfs_Loader_PluginLoader_Create
 func ipfs_Loader_PluginLoader_Create( plugin_path *C.char ) int64 {
 	loader,err := loader.NewPluginLoader( C.GoString( plugin_path ) )
@@ -154,10 +214,23 @@ func ipfs_Loader_PluginLoader_Create( plugin_path *C.char ) int64 {
 	}
 
 	// Add the loader to the object array and return its handle
-	api_context.plugin_loaders = append( api_context.plugin_loaders, loader )
-	return int64( len( api_context.plugin_loaders ) )
+	return handle_from_pluginLoader( loader )
 }
 
+/*
+	Initialize a plugin loader
+
+	Parameters:
+		handle
+			Handle to plugin loader; the result of a previous
+			ipfs_Loader_PluginLoader call
+
+	Return:
+		On success:
+			1
+		Otherwise:
+			Error code. See ipfs_GetError and ipfs_ReleaseError for details
+*/
 //export ipfs_Loader_PluginLoader_Initialize
 func ipfs_Loader_PluginLoader_Initialize( handle int64 ) int64 {
 	loader,ec := pluginLoader_from_handle( handle )
@@ -173,6 +246,20 @@ func ipfs_Loader_PluginLoader_Initialize( handle int64 ) int64 {
 	return 1
 }
 
+/*
+	Inject the plugins loaded into the IPFS node
+
+	Parameters:
+		handle
+			Handle to plugin loader; the result of a previous
+			ipfs_Loader_PluginLoader call
+
+	Return:
+		On success:
+			1
+		Otherwise:
+			Error code. See ipfs_GetError and ipfs_ReleaseError for details
+*/
 //export ipfs_Loader_PluginLoader_Inject
 func ipfs_Loader_PluginLoader_Inject( handle int64 ) int64 {
 	loader,ec := pluginLoader_from_handle( handle )
