@@ -9,7 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 //	"log"
-//	"os"
+	"os"
 //	"path/filepath"
 //	"strings"
 //	"sync"
@@ -43,6 +43,10 @@ type ipfs_api_context struct {
 	errors			map[int64]error
 	next_error		int64
 
+	// String passing
+	strings			map[int64]string
+	next_string		int64
+
 	// Handle types
 	plugin_loaders		[]*loader.PluginLoader
 	configs			[]*config.Config
@@ -60,11 +64,13 @@ func ipfs_Init() {
 	ctx, cancel := context.WithCancel( context.Background() )
 	api_context.ctx = ctx
 	api_context.ctx_cancel = cancel
-	api_context.next_error = -1
 
 	api_context.errors = make(map[int64]error)
-}
+	api_context.next_error = -1
 
+	api_context.strings = make(map[int64]string)
+	api_context.next_string = 1
+}
 //export ipfs_Cleanup
 func ipfs_Cleanup() {
 	// Tear down everything
@@ -92,17 +98,43 @@ func ipfs_ReleaseError( handle int64 ) int64 {
 	delete( api_context.errors, handle )
 	return 1
 }
-
 func ipfs_SubmitError( err error ) int64 {
 	handle := api_context.next_error
 
 	api_context.errors[handle] = err
-
 	api_context.next_error = handle - 1
+
 	return handle
 }
 
 
+func ipfs_SubmitString( str string ) int64 {
+	handle := api_context.next_string
+
+	api_context.strings[handle] = str
+	api_context.next_error = handle + 1
+
+	return handle
+}
+//export ipfs_GetString
+func ipfs_GetString( handle int64 ) *C.char {
+	str, ok := api_context.strings[handle]
+	if ok {
+		return C.CString( str )
+	} else {
+		return nil
+	}
+}
+//export ipfs_ReleaseString
+func ipfs_ReleaseString( handle int64 ) int64 {
+	_, ok := api_context.strings[handle]
+
+	if !ok {
+		return 0
+	}
+	delete( api_context.strings, handle )
+	return 1
+}
 
 
 func pluginLoader_from_handle( handle int64 ) (*loader.PluginLoader, int64) {
@@ -383,11 +415,38 @@ func ipfs_CoreAPI_Unixfs_Get( api_handle int64, cid_str *C.char ) int64 {
 		return ipfs_SubmitError( err )
 	}
 
-	api_context.nodes = append( api_context.nodes, node )
-	return int64( len( api_context.nodes ) )
+	return handle_from_node( node )
+}
+//export ipfs_CoreAPI_Unixfs_Add
+func ipfs_CoreAPI_Unixfs_Add( api_handle int64, node_handle int64 ) int64 {
+	api, ec := coreAPI_from_handle( api_handle )
+	if ec <= 0 {
+		return ec
+	}
+
+	node, ec := node_from_handle( node_handle )
+	if ec <= 0 {
+		return ec
+	}
+
+	cid, err := api.Unixfs().Add( api_context.ctx, node )
+	if err != nil {
+		return ipfs_SubmitError( err )
+	}
+
+	err = cid.IsValid()
+	if err != nil {
+		return ipfs_SubmitError( err )
+	}
+
+	return ipfs_SubmitString( cid.String() )
 }
 
 
+func handle_from_node( node files.Node ) ( int64 ) {
+	api_context.nodes = append( api_context.nodes, node )
+	return int64( len( api_context.nodes ) )
+}
 func node_from_handle( handle int64 ) (files.Node, int64) {
 	// Get the PluginLoader Object
 	if handle < 1 || int(handle) > len( api_context.nodes ) {
@@ -453,6 +512,22 @@ func ipfs_Node_Read( handle int64, unsafe_bytes unsafe.Pointer, bytes_limit int3
 	}
 
 	return int64( read_count + 1 )
+}
+//export ipfs_Node_NewFromPath
+func ipfs_Node_NewFromPath( c_path *C.char ) int64 {
+	path := C.GoString(c_path)
+
+	st, err := os.Stat(path)
+	if err != nil {
+		return ipfs_SubmitError(err)
+	}
+
+	f, err := files.NewSerialFile( path, false, st )
+	if err != nil {
+		return ipfs_SubmitError(err)
+	}
+
+	return handle_from_node( f )
 }
 
 

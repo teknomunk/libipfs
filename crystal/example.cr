@@ -53,3 +53,9 @@ bootstrapNodes.each {|addr|
 node = ipfs.unixfs.get( "QmUaoioqU7bxezBQZkUcgcSyokatMY71sxsALxQmRRrHrj" )
 puts node.gets_to_end
 
+puts "CID:"
+puts ipfs.unixfs.add( IPFS::Node.from_path("notes.txt") )
+
+puts "Press enter to exit"
+gets
+

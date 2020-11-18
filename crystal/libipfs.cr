@@ -13,6 +13,9 @@ lib LibIPFS
 	fun ipfs_GetError( handle : Int64 ) : CString
 	fun ipfs_ReleaseError( handle : Int64 ) : Void
 
+	fun ipfs_GetString( handle : Int64 ) : CString
+	fun ipfs_ReleaseString( handle : Int64 ) : Void
+
 	type PluginLoaderHandle = Int64
 	fun ipfs_Loader_PluginLoader_Create( path : CString ) : PluginLoaderHandle
 	fun ipfs_Loader_PluginLoader_Initialize( handle : PluginLoaderHandle ) : ErrorCode
@@ -37,11 +40,14 @@ lib LibIPFS
 	type NodeHandle = Int64
 	fun ipfs_CoreAPI_Create( cfg : BuildCfgHandle ) : CoreAPIHandle
 	fun ipfs_CoreAPI_Swarm_Connect_async( api : CoreAPIHandle, peerAddr : CString, complete : Int64* ) : ErrorCode
+
 	fun ipfs_CoreAPI_Unixfs_Get( api : CoreAPIHandle, cid : CString ) : NodeHandle
+	fun ipfs_CoreAPI_Unixfs_Add( api : CoreAPIHandle, node : NodeHandle ) : ErrorCode
 
 	fun ipfs_Node_GetType( node : NodeHandle ) : Int64
 	fun ipfs_Node_Read( node : NodeHandle, unsafe_bytes : UInt8*, limit : Int32, offset : Int64 ) : Int64
 	#fun ipfs_Node_Read_async( node : NodeHandle, unsafe_bytes : UInt8*, limit : Int32, offset : Int64, complete : Int64*) ) : Int64
+	fun ipfs_Node_NewFromPath( filename : CString ) : NodeHandle
 
 	fun ipfs_RunGoroutines() : ErrorCode
 end
