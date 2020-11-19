@@ -20,6 +20,7 @@ lib LibIPFS
 	fun ipfs_Loader_PluginLoader_Create( path : CString ) : PluginLoaderHandle
 	fun ipfs_Loader_PluginLoader_Initialize( handle : PluginLoaderHandle ) : ErrorCode
 	fun ipfs_Loader_PluginLoader_Inject( handle : PluginLoaderHandle ) : ErrorCode
+	fun ipfs_Loader_PluginLoader_Release( handle : PluginLoaderHandle ) : ErrorCode
 
 	type ConfigHandle = Int64
 	type IoHandle = Int64

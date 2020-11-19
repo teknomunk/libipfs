@@ -36,6 +36,9 @@ module IPFS
 		def inject()
 			IPFS.check_error LibIPFS.ipfs_Loader_PluginLoader_Inject( @handle )
 		end
+		def finalize()
+			IPFS.check_error LibIPFS.ipfs_Loader_PluginLoader_Release( @handle )
+		end
 	end
 
 	class Config
