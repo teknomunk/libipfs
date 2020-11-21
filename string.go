@@ -10,7 +10,7 @@ import "C"
 */
 //export ipfs_GetError
 func ipfs_GetError( handle int64 ) *C.char {
-	err, ok := api_context.errors[handle]
+	err, ok := api_context.errors.objects[handle]
 	if ok {
 		return C.CString( err.Error() )
 	} else {
@@ -24,12 +24,12 @@ func ipfs_GetError( handle int64 ) *C.char {
 */
 //export ipfs_ReleaseError
 func ipfs_ReleaseError( handle int64 ) int64 {
-	_, ok := api_context.errors[handle]
+	_, ok := api_context.errors.objects[handle]
 
 	if !ok {
 		return 0
 	}
-	delete( api_context.errors, handle )
+	delete( api_context.errors.objects, handle )
 	return 1
 }
 
@@ -38,10 +38,10 @@ func ipfs_ReleaseError( handle int64 ) int64 {
 	code for returning thru the API.
 */
 func ipfs_SubmitError( err error ) int64 {
-	handle := api_context.next_error
+	handle := api_context.errors.next_handle
 
-	api_context.errors[handle] = err
-	api_context.next_error = handle - 1
+	api_context.errors.objects[handle] = err
+	api_context.errors.next_handle = handle - 1
 
 	return handle
 }
@@ -53,10 +53,10 @@ func ipfs_SubmitError( err error ) int64 {
 	return type or thru a inter64_t* parameter return buffer.
 */
 func ipfs_SubmitString( str string ) int64 {
-	handle := api_context.next_string
+	handle := api_context.strings.next_handle
 
-	api_context.strings[handle] = str
-	api_context.next_error = handle + 1
+	api_context.strings.objects[handle] = str
+	api_context.strings.next_handle = handle + 1
 
 	return handle
 }
@@ -66,7 +66,7 @@ func ipfs_SubmitString( str string ) int64 {
 */
 //export ipfs_GetString
 func ipfs_GetString( handle int64 ) *C.char {
-	str, ok := api_context.strings[handle]
+	str, ok := api_context.strings.objects[handle]
 	if ok {
 		return C.CString( str )
 	} else {
@@ -80,11 +80,11 @@ func ipfs_GetString( handle int64 ) *C.char {
 */
 //export ipfs_ReleaseString
 func ipfs_ReleaseString( handle int64 ) int64 {
-	_, ok := api_context.strings[handle]
+	_, ok := api_context.strings.objects[handle]
 
 	if !ok {
 		return 0
 	}
-	delete( api_context.strings, handle )
+	delete( api_context.strings.objects, handle )
 	return 1
 }

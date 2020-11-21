@@ -46,3 +46,4 @@ func ipfs_CoreAPI_Unixfs_Add( api_handle int64, node_handle int64 ) int64 {
 
 	return ipfs_SubmitString( cid.String() )
 }
+

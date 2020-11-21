@@ -12,10 +12,10 @@ import (
 	Internal helper function to convert a *loader.Plugin into a handle
 */
 func handle_from_pluginLoader( loader *loader.PluginLoader ) ( int64 ) {
-	handle := api_context.next_plugin_loader
+	handle := api_context.plugin_loaders.next_handle
 
-	api_context.plugin_loaders[handle] = loader
-	api_context.next_plugin_loader = handle + 1
+	api_context.plugin_loaders.objects[handle] = loader
+	api_context.plugin_loaders.next_handle = handle + 1
 
 	return handle
 }
@@ -23,7 +23,7 @@ func handle_from_pluginLoader( loader *loader.PluginLoader ) ( int64 ) {
 	Internal helper function to convert a handle to a *loader.PluginLoader
 */
 func pluginLoader_from_handle( handle int64 ) (*loader.PluginLoader, int64) {
-	loader, ok := api_context.plugin_loaders[handle]
+	loader, ok := api_context.plugin_loaders.objects[handle]
 	if ok {
 		return loader, 1
 	} else {
@@ -130,11 +130,11 @@ func ipfs_Loader_PluginLoader_Inject( handle int64 ) int64 {
 */
 //export ipfs_Loader_Release
 func ipfs_Loader_Release( handle int64 ) int64 {
-	_, ok := api_context.plugin_loaders[handle]
+	_, ok := api_context.plugin_loaders.objects[handle]
 	if !ok {
 		return ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid PluginLoader handle: %d", handle ) ) )
 	}
 
-	delete( api_context.plugin_loaders, handle )
+	delete( api_context.plugin_loaders.objects, handle )
 	return 1
 }
