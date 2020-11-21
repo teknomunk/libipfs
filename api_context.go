@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	config "github.com/ipfs/go-ipfs-config"
 	files "github.com/ipfs/go-ipfs-files"
@@ -110,4 +111,12 @@ func ipfs_Cleanup() {
 
 	fmt.Println("ipfs closed")
 }
+
+//export ipfs_RunGoroutines
+func ipfs_RunGoroutines() int64 {
+	runtime.Gosched()
+	return 1
+}
+
+func main() {}
 
