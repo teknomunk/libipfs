@@ -12,12 +12,21 @@ import (
 	"github.com/ipfs/go-ipfs/core/coreapi"
 )
 
-func coreAPI_from_handle( handle int64 ) (icore.CoreAPI,int64) {
-	if handle < 1 || int(handle) > len( api_context.core_apis ) {
-		return nil, ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid BuildCfg handle: %d", handle ) ) )
-	}
+func handle_from_CoreAPI( api icore.CoreAPI ) (int64) {
+	handle := api_context.core_apis.next_handle
 
-	return api_context.core_apis[handle-1], 1
+	api_context.core_apis.objects[handle] = api
+	api_context.core_apis.next_handle = handle + 1
+
+	return handle
+}
+func coreAPI_from_handle( handle int64 ) (icore.CoreAPI,int64) {
+	api, ok := api_context.core_apis.objects[handle]
+	if ok {
+		return api, 1
+	} else {
+		return nil, ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid CoreAPI handle: %d", handle ) ) )
+	}
 }
 //export ipfs_CoreAPI_Create
 func ipfs_CoreAPI_Create( cfg_handle int64 ) int64 {
@@ -36,6 +45,17 @@ func ipfs_CoreAPI_Create( cfg_handle int64 ) int64 {
 		return ipfs_SubmitError( err )
 	}
 
-	api_context.core_apis = append( api_context.core_apis, api )
-	return int64( len( api_context.core_apis ) )
+	return handle_from_CoreAPI( api )
+}
+
+//export ipfs_CoreAPI_Release
+func ipfs_CoreAPI_Release( handle int64 ) int64 {
+	_, ok := api_context.core_apis.objects[handle]
+	if !ok {
+		return ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid CoreAPI handle: %d", handle ) ) )
+	}
+
+	delete( api_context.core_apis.objects, handle )
+
+	return 1
 }

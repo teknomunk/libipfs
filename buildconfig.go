@@ -11,12 +11,21 @@ import (
 	"github.com/ipfs/go-ipfs/core"
 )
 
+func handle_from_buildCfg( config *core.BuildCfg ) (int64) {
+	handle := api_context.build_cfgs.next_handle
+
+	api_context.build_cfgs.objects[handle] = config
+	api_context.build_cfgs.next_handle = handle + 1
+
+	return handle
+}
 func buildCfg_from_handle( handle int64 ) (*core.BuildCfg,int64) {
-	if handle < 1 || int(handle) > len( api_context.build_cfgs ) {
+	cfg, ok := api_context.build_cfgs.objects[ handle ]
+	if ok {
+		return cfg, 1
+	} else {
 		return nil, ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid BuildCfg handle: %d", handle ) ) )
 	}
-
-	return api_context.build_cfgs[handle-1], 1
 }
 
 //export ipfs_BuildCfg_Create
@@ -25,8 +34,7 @@ func ipfs_BuildCfg_Create( ) int64 {
 		Online: true,
 	}
 
-	api_context.build_cfgs = append( api_context.build_cfgs, options )
-	return int64( len( api_context.build_cfgs ) )
+	return handle_from_buildCfg( options )
 }
 //export ipfs_BuildCfg_SetOnline
 func ipfs_BuildCfg_SetOnline( handle int64, state int32 ) int64 {
@@ -78,11 +86,13 @@ func ipfs_BuildCfg_SetRepo( cfg_handle int64, repo_handle int64 ) int64 {
 }
 //export ipfs_BuildCfg_Release
 func ipfs_BuildCfg_Release( handle int64 ) int64 {
-	if handle < 1 || int(handle) > len( api_context.build_cfgs ) {
+	_, ok := api_context.build_cfgs.objects[handle]
+	if !ok {
 		return ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid BuildCfg handle %d", handle ) ) )
 	}
 
-	// Release the reference and allog the garbage collector to recover
-	api_context.build_cfgs[handle-1] = nil
+	// Release the reference and allow the garbage collector to recover
+	delete( api_context.configs.objects, handle )
+
 	return 1
 }

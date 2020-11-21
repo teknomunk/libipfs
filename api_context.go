@@ -27,8 +27,11 @@ type PluginLoadersHolder struct {
 	objects			map[int64]*loader.PluginLoader
 	next_handle		int64
 }
+type UnixfsAddOptionArray struct {
+	options		[]*options.UnixfsAddOption
+}
 type UnixfsAddSettingsHolder struct {
-	objects			map[int64]*options.UnixfsAddSettings
+	objects			map[int64]*UnixfsAddOptionArray
 	next_handle		int64
 }
 type ConfigsHolder struct {
@@ -37,6 +40,18 @@ type ConfigsHolder struct {
 }
 type ReposHolder struct {
 	objects			map[int64]repo.Repo
+	next_handle		int64
+}
+type BuildCfgsHolder struct {
+	objects			map[int64]*core.BuildCfg
+	next_handle		int64
+}
+type CoreAPIsHolder struct {
+	objects			map[int64]icore.CoreAPI
+	next_handle		int64
+}
+type NodesHolder struct {
+	objects			map[int64]files.Node
 	next_handle		int64
 }
 
@@ -52,12 +67,9 @@ type libipfsAPIContext struct {
 	plugin_loaders				PluginLoadersHolder
 	configs					ConfigsHolder
 	repos					ReposHolder
-
-	//repos					[]repo.Repo
-	build_cfgs				[]*core.BuildCfg
-	core_apis					[]icore.CoreAPI
-	nodes					[]files.Node
-
+	build_cfgs				BuildCfgsHolder
+	core_apis					CoreAPIsHolder
+	nodes					NodesHolder
 	unixfs_add_settings			UnixfsAddSettingsHolder
 }
 var api_context libipfsAPIContext
@@ -93,10 +105,20 @@ func ipfs_Init() {
 		objects: make(map[int64]repo.Repo),
 		next_handle: 1,
 	}
-
-
+	api_context.build_cfgs = BuildCfgsHolder {
+		objects: make(map[int64]*core.BuildCfg),
+		next_handle: 1,
+	}
+	api_context.core_apis = CoreAPIsHolder {
+		objects: make(map[int64]icore.CoreAPI),
+		next_handle: 1,
+	}
+	api_context.nodes = NodesHolder {
+		objects: make(map[int64]files.Node),
+		next_handle: 1,
+	}
 	api_context.unixfs_add_settings = UnixfsAddSettingsHolder {
-		objects: make(map[int64]*options.UnixfsAddSettings),
+		objects: make(map[int64]*UnixfsAddOptionArray),
 		next_handle: 1,
 	}
 }

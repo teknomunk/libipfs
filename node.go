@@ -12,15 +12,20 @@ import (
 )
 
 func handle_from_node( node files.Node ) ( int64 ) {
-	api_context.nodes = append( api_context.nodes, node )
-	return int64( len( api_context.nodes ) )
+	handle := api_context.nodes.next_handle
+
+	api_context.nodes.objects[handle] = node
+	api_context.nodes.next_handle = handle + 1
+
+	return handle
 }
 func node_from_handle( handle int64 ) (files.Node, int64) {
-	// Get the PluginLoader Object
-	if handle < 1 || int(handle) > len( api_context.nodes ) {
+	node, ok := api_context.nodes.objects[handle]
+	if ok {
+		return node, 1
+	} else {
 		return nil,ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid Node handle: %d", handle ) ) )
 	}
-	return api_context.nodes[handle-1], 1
 }
 
 func ipfs_Node_GetType( handle int64 ) int64 {

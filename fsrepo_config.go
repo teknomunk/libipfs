@@ -12,7 +12,7 @@ import (
 /*
 	Internal helper function to convert a *config.Config into a handle
 */
-func handle_from_config( config *config.Config ) (int64 ) {
+func handle_from_config( config *config.Config ) (int64) {
 	// Add the config to the object array and return its handle
 	handle := api_context.configs.next_handle
 
