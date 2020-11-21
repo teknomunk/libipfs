@@ -14,8 +14,12 @@ import (
 */
 func handle_from_config( config *config.Config ) (int64 ) {
 	// Add the config to the object array and return its handle
-	api_context.configs = append( api_context.configs, config )
-	return int64( len( api_context.configs ) )
+	handle := api_context.configs.next_handle
+
+	api_context.configs.objects[handle] = config
+	api_context.configs.next_handle = handle + 1
+
+	return handle
 }
 
 /*
@@ -23,10 +27,12 @@ func handle_from_config( config *config.Config ) (int64 ) {
 */
 func config_from_handle( handle int64 ) (*config.Config, int64) {
 	// Get the Config  Object
-	if handle < 1 || int(handle) > len( api_context.configs ) {
+	config, ok := api_context.configs.objects[handle]
+	if ok {
+		return config, 1
+	} else {
 		return nil, ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid Config handle: %d", handle ) ) )
 	}
-	return api_context.configs[ handle - 1 ], 1
 }
 
 //export ipfs_Config_Init
@@ -45,5 +51,15 @@ func ipfs_Config_Init( io_handle int64, size int32 ) int64 {
 	}
 
 	return handle_from_config( config )
+}
+//export ipfs_Config_Release
+func ipfs_Config_Release( handle int64 ) int64 {
+	_, ok := api_context.configs.objects[handle]
+	if !ok {
+		return ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid Config handle: %d", handle ) ) )
+	}
+
+	delete( api_context.configs.objects, handle )
+	return 1
 }
 

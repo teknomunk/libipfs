@@ -138,3 +138,4 @@ func ipfs_Loader_Release( handle int64 ) int64 {
 	delete( api_context.plugin_loaders.objects, handle )
 	return 1
 }
+

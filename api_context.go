@@ -30,6 +30,14 @@ type UnixfsAddSettingsHolder struct {
 	objects			map[int64]*options.UnixfsAddSettings
 	next_handle		int64
 }
+type ConfigsHolder struct {
+	objects			map[int64]*config.Config
+	next_handle		int64
+}
+type ReposHolder struct {
+	objects			map[int64]repo.Repo
+	next_handle		int64
+}
 
 /*
  * Stuff all the values that need to be maintained between api calls here
@@ -41,9 +49,10 @@ type libipfsAPIContext struct {
 	errors					ErrorsHolder
 	strings					StringsHolder
 	plugin_loaders				PluginLoadersHolder
+	configs					ConfigsHolder
+	repos					ReposHolder
 
-	configs					[]*config.Config
-	repos					[]repo.Repo
+	//repos					[]repo.Repo
 	build_cfgs				[]*core.BuildCfg
 	core_apis					[]icore.CoreAPI
 	nodes					[]files.Node
@@ -73,6 +82,14 @@ func ipfs_Init() {
 	}
 	api_context.plugin_loaders = PluginLoadersHolder {
 		objects: make(map[int64]*loader.PluginLoader),
+		next_handle: 1,
+	}
+	api_context.configs = ConfigsHolder {
+		objects: make(map[int64]*config.Config),
+		next_handle: 1,
+	}
+	api_context.repos = ReposHolder {
+		objects: make(map[int64]repo.Repo),
 		next_handle: 1,
 	}
 
