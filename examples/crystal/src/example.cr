@@ -1,6 +1,4 @@
-require "./libipfs"
-require "./libp2p"
-require "./ipfs"
+require "libipfs/ipfs"
 
 # Below is a partial port of the ipfs-as-a-library example program in crystal
 
@@ -53,8 +51,10 @@ bootstrapNodes.each {|addr|
 node = ipfs.unixfs.get( "QmUaoioqU7bxezBQZkUcgcSyokatMY71sxsALxQmRRrHrj" )
 puts node.gets_to_end
 
-puts "CID:"
-puts ipfs.unixfs.add( IPFS::Node.from_path("notes.txt") )
+if File.exists?("notes.txt")
+	puts "CID:"
+	puts ipfs.unixfs.add( IPFS::Node.from_path("notes.txt") )
+end
 
 puts "Press enter to exit"
 gets

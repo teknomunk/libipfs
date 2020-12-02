@@ -1,0 +1,6 @@
+version: 2.0
+shards:
+  libipfs:
+    git: https://github.com/teknomunk/cr-libipfs.git
+    version: 0.1.0+git.commit.5ce69f5c1d6167a50ffbc7c341dc2abb279cb7bb
+

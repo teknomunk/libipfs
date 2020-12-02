@@ -1,7 +1,8 @@
 package main
 
+import "C"
+
 import (
-	"C"
 	"errors"
 	"fmt"
 
@@ -128,8 +129,8 @@ func ipfs_Loader_PluginLoader_Inject( handle int64 ) int64 {
 		Otherwise:
 			Error code. See ipfs_GetError and ipfs_ReleaseError for details
 */
-//export ipfs_Loader_Release
-func ipfs_Loader_Release( handle int64 ) int64 {
+//export ipfs_Loader_PluginLoader_Release
+func ipfs_Loader_PluginLoader_Release( handle int64 ) int64 {
 	_, ok := api_context.plugin_loaders.objects[handle]
 	if !ok {
 		return ipfs_SubmitError( errors.New( fmt.Sprintf( "Invalid PluginLoader handle: %d", handle ) ) )

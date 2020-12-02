@@ -1,3 +1,4 @@
 libipfs.h
 example
 libipfs.so
+examples/crystal/lib/
