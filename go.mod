@@ -1,4 +1,4 @@
-module github.com/ipfs/go-ipfs/examples/go-ipfs-as-a-library
+module github.com/teknomunk/go-libipfs
 
 go 1.14
 
@@ -12,4 +12,4 @@ require (
 	github.com/multiformats/go-multiaddr v0.3.1
 )
 
-replace github.com/ipfs/go-ipfs => ./../../../..
+replace github.com/ipfs/go-ipfs => ./../go-ipfs/

@@ -1,5 +1,7 @@
 package main
 
+import "C"
+
 import (
 	"context"
 	"fmt"
@@ -8,7 +10,6 @@ import (
 	config "github.com/ipfs/go-ipfs-config"
 	files "github.com/ipfs/go-ipfs-files"
 	icore "github.com/ipfs/interface-go-ipfs-core"
-	"github.com/ipfs/interface-go-ipfs-core/options"
 
 	"github.com/ipfs/go-ipfs/repo"
 	"github.com/ipfs/go-ipfs/core"
@@ -27,10 +28,7 @@ type PluginLoadersHolder struct {
 	objects			map[int64]*loader.PluginLoader
 	next_handle		int64
 }
-type UnixfsAddOptionArray struct {
-	options		[]*options.UnixfsAddOption
-}
-type UnixfsAddSettingsHolder struct {
+type UnixfsAddOptionsHolder struct {
 	objects			map[int64]*UnixfsAddOptionArray
 	next_handle		int64
 }
@@ -70,7 +68,7 @@ type libipfsAPIContext struct {
 	build_cfgs				BuildCfgsHolder
 	core_apis					CoreAPIsHolder
 	nodes					NodesHolder
-	unixfs_add_settings			UnixfsAddSettingsHolder
+	unixfs_add_options			UnixfsAddOptionsHolder
 }
 var api_context libipfsAPIContext
 
@@ -117,11 +115,12 @@ func ipfs_Init() {
 		objects: make(map[int64]files.Node),
 		next_handle: 1,
 	}
-	api_context.unixfs_add_settings = UnixfsAddSettingsHolder {
+	api_context.unixfs_add_options = UnixfsAddOptionsHolder {
 		objects: make(map[int64]*UnixfsAddOptionArray),
 		next_handle: 1,
 	}
 }
+
 /*
 	Cleanup/teardown the IPFS library. Calling any ipfs_* functions after
 	calling this function is undefined.
@@ -134,6 +133,10 @@ func ipfs_Cleanup() {
 	fmt.Println("ipfs closed")
 }
 
+/*
+	Run Goroutines. This needs to be called periodically for the library
+	to function.
+*/
 //export ipfs_RunGoroutines
 func ipfs_RunGoroutines() int64 {
 	runtime.Gosched()
