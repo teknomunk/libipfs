@@ -53,6 +53,6 @@ To build and run the example code, you will need the crystal compiler.
 
 # Documentation
 
-There is almost no comments and no documentation. Hopefully this changes
+There are almost no comments and no documentation. Hopefully this changes
 in the future.
 

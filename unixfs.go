@@ -46,6 +46,68 @@ func ipfs_UnixfsAddOptions_Create() int64 {
 }
 
 /*
+	Specify option values.
+
+	Parameters:
+		int64_t opts_handle
+			Handle to the options array created by ipfs_UnixfsAddOptions_Create
+
+		int32_t option
+			Option to set. Available options are:
+
+			enum {
+				IPFS_UNIXFS_AO_CID_VERSION		= 1,
+						// Int parameter
+						//   0 - CIDv0	(default)
+						//	1 - CIDv1
+
+				IPFS_UNIXFS_AO_HASH_TYPE			= 2,
+						// String parameter
+						// Acceptable values:
+						//   sha-256
+
+				IPFS_UNIXFS_AO_INLINE			= 3,
+						// Bool parameter (experimental)
+						//  true  - Inline small blocks into CIDs.
+						//  false - Normal operation (default)
+
+				IPFS_UNIXFS_AO_INLINE_LIMIT		= 4,
+						// Int parameter (experimental)
+						// Maximum block size to inline. Default: 32
+
+				IPFS_UNIXFS_AO_RAW_LEAVES		= 5,
+						// Bool parameter (experimental)
+						//   true  - Use raw blocks for leaf nodes.
+						//   false - Normal operation (default)
+
+				IPFS_UNIXFS_AO_RAW_LEAVES_SET		= 6,
+						// Bool
+
+				IPFS_UNIXFS_AO_CHUNKER			= 7,
+						// String
+
+				IPFS_UNIXFS_AO_PIN				= 9,
+						// Bool - Pin added object if true.
+			}
+
+		char* c_string_value
+			parameter when option is a string value and ignored otherwise
+
+		int64_t int_value
+			parameter when option is an integer or boolean value and ignored otherwise
+
+	Return:
+		On success:
+			1
+		Otherwise:
+			Error code. See ipfs_GetError and ipfs_ReleaseError for details
+*/
+//export ipfs_UnixfsAddOptions_SetOption
+func ipfs_UnixfsAddOption_SetOption( opts_handle int64, option int32, c_string_value *C.char, int_value int64 ) int64 {
+	return ipfs_SubmitError( errors.New( fmt.Sprintf( "Unrecognized Unixfs Add option: %d", option)))
+}
+
+/*
 	Specify the hash function to use. Default if not specified is sha2-256
 
 	Parameters:
